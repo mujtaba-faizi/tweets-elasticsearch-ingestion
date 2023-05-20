@@ -3,10 +3,19 @@ import gzip
 import json
 import requests
 from requests.auth import HTTPBasicAuth
+from dotenv import load_dotenv
+
+
+load_dotenv()
+URL = os.getenv("URL")
+ABS_PATH = os.getenv("ABS_PATH")
+HEADERS = {'Content-Type': 'application/json','Authorization': os.getenv("API_KEY"),}
+AUTH = os.getenv("AUTH")
+VERIFY = os.getenv("VERIFY")
 
 
 def sendPostRequest(request, data):
-    if AUTH is None:
+    if AUTH == "":
         r = requests.post(request, headers=HEADERS, data=data, )
     else:
         r = requests.post(request, headers=HEADERS, data=data, auth=AUTH, verify=VERIFY)
@@ -14,7 +23,7 @@ def sendPostRequest(request, data):
 
 
 def deleteDoc(doc_id):
-    if AUTH is None:
+    if AUTH == "":
         r = requests.delete(URL + "/" + doc_id, headers=HEADERS,)
     else:
         r = requests.delete(URL + "/" + doc_id, headers=HEADERS, auth=AUTH, verify=VERIFY)
@@ -37,10 +46,11 @@ def index():
                     json_data = json.loads(line)
                     data = json_data["data"]
                     data = {'data': data, "second_timestamp": int(sec_file[-7:-5]), 'minute_timestamp': int(min_file)}
-                    sendPostRequest(URL, data)
-                    #break
-            #break
-        #break
+                    r = requests.post(URL, headers=HEADERS, json=data,)
+                    print(r.text)
+                    break
+            break
+        break
 
 
 # deleteDoc("0K1zmYcBf-vfNQzqUNj1")
