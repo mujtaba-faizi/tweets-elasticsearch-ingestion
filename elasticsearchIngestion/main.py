@@ -45,12 +45,18 @@ def index():
                 for line in file:
                     json_data = json.loads(line)
                     data = json_data["data"]
-                    data = {'data': data, "second_timestamp": int(sec_file[-7:-5]), 'minute_timestamp': int(min_file)}
-                    r = requests.post(URL, headers=HEADERS, json=data,)
-                    print(r.text)
-                    break
-            break
-        break
+                    for doc in data:    # array of json documents
+                        doc["timestamp_second"] = int(sec_file[-7:-5])
+                        doc["timestamp_minute"] = int(min_file)
+                        r = requests.post(URL, headers=HEADERS, json=doc, )
+                        print(r.text)
+                        # break
+                    # data = {'data': data, "second_timestamp": int(sec_file[-7:-5]), 'minute_timestamp': int(min_file)}
+                    # r = requests.post(URL, headers=HEADERS, json=data,)
+                    # print(r.text)
+                    # break
+            # break
+        # break
 
 
 # deleteDoc("0K1zmYcBf-vfNQzqUNj1")
