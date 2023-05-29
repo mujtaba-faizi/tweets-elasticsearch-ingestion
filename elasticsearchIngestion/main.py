@@ -4,12 +4,12 @@ import json
 import requests
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
-
+import tarfile
 
 load_dotenv()
 URL = os.getenv("URL")
 ABS_PATH = os.getenv("ABS_PATH")
-HEADERS = {'Content-Type': 'application/json','Authorization': os.getenv("API_KEY"),}
+HEADERS = {'Content-Type': 'application/json', 'Authorization': os.getenv("API_KEY"), }
 AUTH = os.getenv("AUTH")
 VERIFY = os.getenv("VERIFY")
 
@@ -24,7 +24,7 @@ def sendPostRequest(request, data):
 
 def deleteDoc(doc_id):
     if AUTH == "":
-        r = requests.delete(URL + "/" + doc_id, headers=HEADERS,)
+        r = requests.delete(URL + "/" + doc_id, headers=HEADERS, )
     else:
         r = requests.delete(URL + "/" + doc_id, headers=HEADERS, auth=AUTH, verify=VERIFY)
     print(r.text)
@@ -35,17 +35,44 @@ def deleteAllDocs():
     sendPostRequest(URL[:-5] + "/_delete_by_query?conflicts=proceed", data)
 
 
+def extract():
+    min_entries = os.listdir(ABS_PATH)  # list of all minute folder names
+    for zip in min_entries:
+        if zip == "0300":  # skip this folder
+            continue
+        print(ABS_PATH + "/" + zip)
+        file = tarfile.open(ABS_PATH + "/" + zip)
+        file.extractall("./extraction_dir/" + zip)
+        file.close()
+
+
 def index():
     min_entries = os.listdir(ABS_PATH)  # list of all minute folder names
     for min_file in min_entries:  # iterate over all minute files
-        min_path = ABS_PATH+min_file+"/"
+        min_path = ABS_PATH + min_file + "/"
         sec_entries = os.listdir(min_path)  # list of all second folder names
+        dir(min_path)  # list of all second folder names
         for sec_file in sec_entries:  # iterate over all second files
             with open(min_path + sec_file, 'r', encoding='utf8') as file:
                 for line in file:
                     json_data = json.loads(line)
                     data = json_data["data"]
-                    for doc in data:    # array of json documents
+                    try:
+                        places = json_data["includes"]["places"]
+                    except:
+                        pass
+                    for doc in data:  # array of json documents
+                        try:
+                            place_id = doc["geo"]["place_id"]
+                            for place in places:
+                                if place["id"] == place_id:
+                                    doc["place"] = place
+                                    bbox = doc["place"]["geo"]["bbox"]
+                                    doc["place"]["geo"]["bbox"] = {"type": "envelope", "coordinates":
+                                        [[bbox[2], bbox[3]], [bbox[0], bbox[1]]]}
+                        except:
+                            pass
+                        # doc["place"] = {"geo": {"bbox": {"type" : "envelope", "coordinates":[[-77.03653, 38.897676], [-77.009051, 38.889939]]}, "type":"feature"}, "country":"Spanien"}
                         doc["timestamp_second"] = int(sec_file[-7:-5])
                         doc["timestamp_minute"] = int(min_file)
                         r = requests.post(URL, headers=HEADERS, json=doc, )
@@ -55,10 +82,11 @@ def index():
                     # r = requests.post(URL, headers=HEADERS, json=data,)
                     # print(r.text)
                     # break
-            # break
+        #     break
         # break
 
 
 # deleteDoc("0K1zmYcBf-vfNQzqUNj1")
 deleteAllDocs()
 index()
+# extract()
