@@ -47,6 +47,7 @@ def extract():
 
 
 def index():
+    # count=0
     min_entries = os.listdir(ABS_PATH)  # list of all minute folder names
     for min_file in min_entries:  # iterate over all minute files
         min_path = ABS_PATH + min_file + "/"
@@ -66,10 +67,19 @@ def index():
                             place_id = doc["geo"]["place_id"]
                             for place in places:
                                 if place["id"] == place_id:
+                                    # count = count + 1
+                                    # print(count)
                                     doc["place"] = place
                                     bbox = doc["place"]["geo"]["bbox"]
-                                    doc["place"]["geo"]["bbox"] = {"type": "envelope", "coordinates":
-                                        [[bbox[2], bbox[3]], [bbox[0], bbox[1]]]}
+                                    # if count<7:
+                                    #     doc["place"]["geo"]["bbox"] = {"type": "envelope",
+                                    #                                    "coordinates": [[-67.1425907, 10.6059297],[-66.9123794, 10.5178096]]}
+                                    #
+                                    # else:
+                                    doc["place"]["geo"]["bbox"] = {"type": "envelope", "coordinates": [[float(bbox[0]), float(bbox[3])], [float(bbox[2]), float(bbox[1])]]}  #envelope
+                                        # print(bbox[2], bbox[3], bbox[0], bbox[1])
+                                        # print(doc["place"]["country"])
+                                        # [[bbox[2], bbox[3]], [bbox[0], bbox[1]]]}
                         except:
                             pass
                         # doc["place"] = {"geo": {"bbox": {"type" : "envelope", "coordinates":[[-77.03653, 38.897676], [-77.009051, 38.889939]]}, "type":"feature"}, "country":"Spanien"}
