@@ -5,6 +5,10 @@ import requests
 from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 import tarfile
+# from timer import Timer
+#
+# t = Timer()
+# t.start()
 
 load_dotenv()
 URL = os.getenv("URL")
@@ -14,8 +18,10 @@ AUTH = HTTPBasicAuth(os.getenv("USER"), os.getenv('PASSWORD'))
 VERIFY = os.getenv("VERIFY")
 BUFFER_SIZE = 1000
 
+
 #check if have to reindex data if memory runs out and elasticsearch crashes
 #word clouds for trending hash tags
+
 
 def sendPostRequest(request, data):
     if AUTH == "":
@@ -54,6 +60,7 @@ def index():
     docs = []
     bulk_data = ""
     count = 0
+    index_count = 0
     for min_file in min_entries:  # iterate over all minute files
         min_path = ABS_PATH + min_file + "/"
         sec_entries = os.listdir(min_path)  # list of all second folder names
@@ -76,17 +83,18 @@ def index():
                                     bbox = doc["place"]["geo"]["bbox"]
                                     doc["place"]["geo"] = doc["place"]["geo"] = \
                                         {"bbox": {"type": "envelope", "coordinates": [[float(bbox[0]), float(bbox[3])], [float(bbox[2]), float(bbox[1])]]},
-                                         "center": {"type": "point", "coordinates": [(float(bbox[0])+float(bbox[2]))/2, (float(bbox[3])+ float(bbox[1]))/2]}}
+                                         "center": {"type": "point", "coordinates": [(float(bbox[0])+float(bbox[2]))/2, (float(bbox[3])+float(bbox[1]))/2]}}
                         except:
                             pass
                         doc["timestamp_second"] = int(sec_file[-7:-5])
                         doc["timestamp_minute"] = int(min_file)
                         docs.append(doc)
-                        count = count+1
+                        count += 1
                         # Bulk index the data
                         if count > BUFFER_SIZE:
-                            for i, data in enumerate(docs):
-                                bulk_data += json.dumps({"index": {"_id": i}}) + "\n"
+                            for data in docs:
+                                index_count += 1
+                                bulk_data += json.dumps({"index": {"_id": index_count}}) + "\n"
                                 # add the document data
                                 bulk_data += json.dumps(data) + "\n"
                             r = requests.post(URL, headers=HEADERS, data=bulk_data, auth=AUTH, verify=VERIFY )
@@ -99,8 +107,9 @@ def index():
                     # break
         #     break
         # break
-    for i, data in enumerate(docs):
-        bulk_data += json.dumps({"index": {"_id": count + 1}}) + "\n"
+    for data in docs:
+        index_count += 1
+        bulk_data += json.dumps({"index": {"_id": index_count + 1}}) + "\n"
         # Add the document data
         bulk_data += json.dumps(data) + "\n"
     r = requests.post(URL, headers=HEADERS, data=bulk_data, auth=AUTH, verify=VERIFY)
@@ -112,3 +121,5 @@ def index():
 deleteAllDocs()
 index()
 # extract()
+
+# t.stop()
