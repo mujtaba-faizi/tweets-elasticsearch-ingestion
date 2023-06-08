@@ -1,47 +1,22 @@
 import os
 import gzip
 import json
-import requests
-from requests.auth import HTTPBasicAuth
 from dotenv import load_dotenv
 import tarfile
-# from timer import Timer
-#
-# t = Timer()
-# t.start()
+import time
+
+from util import deleteAllDocs, sendPostRequest
+
+start = time.time()
 
 load_dotenv()
-URL = os.getenv("URL")
 ABS_PATH = os.getenv("ABS_PATH")
-HEADERS = {'Content-Type': 'application/json', }#'Authorization': os.getenv("API_KEY"), }
-AUTH = HTTPBasicAuth(os.getenv("USER"), os.getenv('PASSWORD'))
-VERIFY = os.getenv("VERIFY")
+URL = os.getenv("URL")
 BUFFER_SIZE = 1000
 
 
-#check if have to reindex data if memory runs out and elasticsearch crashes
-#word clouds for trending hash tags
-
-
-def sendPostRequest(request, data):
-    if AUTH == "":
-        r = requests.post(request, headers=HEADERS, data=data, )
-    else:
-        r = requests.post(request, headers=HEADERS, data=data, auth=AUTH, verify=VERIFY)
-    print(r.text)
-
-
-def deleteDoc(doc_id):
-    if AUTH == "":
-        r = requests.delete(URL + "/" + doc_id, headers=HEADERS, )
-    else:
-        r = requests.delete(URL + "/" + doc_id, headers=HEADERS, auth=AUTH, verify=VERIFY)
-    print(r.text)
-
-
-def deleteAllDocs():
-    data = "{ \"query\": { \"match_all\": {} } }"
-    sendPostRequest(URL[:-6] + "/_delete_by_query?conflicts=proceed", data)
+# check if have to reindex data if memory runs out and elasticsearch crashes
+# word clouds for trending hash tags
 
 
 def extract():
@@ -59,7 +34,9 @@ def index():
     min_entries = os.listdir(ABS_PATH)  # list of all minute folder names
     docs = []
     bulk_data = ""
+    # incrementing for bulk requests matching the buffer size
     count = 0
+    # for incrementing index based counts
     index_count = 0
     for min_file in min_entries:  # iterate over all minute files
         min_path = ABS_PATH + min_file + "/"
@@ -82,8 +59,12 @@ def index():
                                     doc["place"] = place
                                     bbox = doc["place"]["geo"]["bbox"]
                                     doc["place"]["geo"] = doc["place"]["geo"] = \
-                                        {"bbox": {"type": "envelope", "coordinates": [[float(bbox[0]), float(bbox[3])], [float(bbox[2]), float(bbox[1])]]},
-                                         "center": {"type": "point", "coordinates": [(float(bbox[0])+float(bbox[2]))/2, (float(bbox[3])+float(bbox[1]))/2]}}
+                                        {"bbox": {"type": "envelope", "coordinates": [[float(bbox[0]), float(bbox[3])],
+                                                                                      [float(bbox[2]),
+                                                                                       float(bbox[1])]]},
+                                         "center": {"type": "point",
+                                                    "coordinates": [(float(bbox[0]) + float(bbox[2])) / 2,
+                                                                    (float(bbox[3]) + float(bbox[1])) / 2]}}
                         except:
                             pass
                         doc["timestamp_second"] = int(sec_file[-7:-5])
@@ -97,12 +78,11 @@ def index():
                                 bulk_data += json.dumps({"index": {"_id": index_count}}) + "\n"
                                 # add the document data
                                 bulk_data += json.dumps(data) + "\n"
-                            r = requests.post(URL, headers=HEADERS, data=bulk_data, auth=AUTH, verify=VERIFY )
+                            r = sendPostRequest(URL, bulk_data)
                             # reset the bulk_data and docs variables
                             bulk_data = ""
                             docs = []
                             count = 0
-                            print(r.content)
                         # break
                     # break
         #     break
@@ -112,9 +92,8 @@ def index():
         bulk_data += json.dumps({"index": {"_id": index_count + 1}}) + "\n"
         # Add the document data
         bulk_data += json.dumps(data) + "\n"
-    r = requests.post(URL, headers=HEADERS, data=bulk_data, auth=AUTH, verify=VERIFY)
+    r = sendPostRequest(URL, bulk_data)
     # Reset the bulk_data variable
-    print(r.content)
 
 
 # deleteDoc("0K1zmYcBf-vfNQzqUNj1")
@@ -122,4 +101,5 @@ deleteAllDocs()
 index()
 # extract()
 
-# t.stop()
+end = time.time()
+print(end - start)
