@@ -20,6 +20,7 @@ ZIPS = ["0300.tar.gz","0301.tar.gz","0302.tar.gz","0303.tar.gz","0304.tar.gz","0
 
 
 def extract():
+    index_count = 0  # for incrementing index based counts
     min_entries = os.listdir(DATA_PATH)  # list of all minute folder names
     for zip in min_entries:
         if zip in ZIPS:  # extract only these minute folders
@@ -27,19 +28,17 @@ def extract():
             file = tarfile.open(DATA_PATH + "/" + zip)
             file.extractall("./extraction_dir/" + zip)
             file.close()
-            index(EXTRACTED_DIR)
+            index_count = index(EXTRACTED_DIR, index_count)
             # delete the extracted minute folder
             shutil.rmtree(EXTRACTED_DIR + zip)
 
 
-def index(path):
+def index(path, index_count):
     min_entries = os.listdir(path)  # list of all minute folder names
     docs = []
     bulk_data = ""
     # incrementing for bulk requests matching the buffer size
     count = 0
-    # for incrementing index based counts
-    index_count = 0
     for min_file in min_entries:  # iterate over all minute files
         min_path = path + min_file + "/"
         sec_entries = os.listdir(min_path)  # list of all second folder names
@@ -95,6 +94,7 @@ def index(path):
         # Add the document data
         bulk_data += json.dumps(data) + "\n"
     sendPostRequest(URL, bulk_data)
+    return index_count
     # Reset the bulk_data variable
 
 

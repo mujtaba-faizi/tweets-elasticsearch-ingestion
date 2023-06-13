@@ -7,7 +7,7 @@ from requests.auth import HTTPBasicAuth
 load_dotenv()
 URL = os.getenv("URL")
 HEADERS = {'Content-Type': 'application/json', }#'Authorization': os.getenv("API_KEY"), }
-AUTH = HTTPBasicAuth(os.getenv("USER"), os.getenv('PASSWORD'))
+AUTH = HTTPBasicAuth(os.getenv("USERNAME"), os.getenv('PASSWORD'))
 VERIFY = os.getenv("VERIFY")
 
 
@@ -16,7 +16,8 @@ def sendPostRequest(request, data):
         r = requests.post(request, headers=HEADERS, data=data, )
     else:
         r = requests.post(request, headers=HEADERS, data=data, auth=AUTH, verify=VERIFY)
-    print(r.text)
+    if r.status_code != 200:    # if post request didn't go through, show the response
+        print(r.text)
 
 
 def deleteDoc(doc_id):
@@ -24,7 +25,8 @@ def deleteDoc(doc_id):
         r = requests.delete(URL + "/" + doc_id, headers=HEADERS, )
     else:
         r = requests.delete(URL + "/" + doc_id, headers=HEADERS, auth=AUTH, verify=VERIFY)
-    print(r.text)
+    if r.status_code != 200:
+        print(r.text)
 
 
 def deleteAllDocs():
